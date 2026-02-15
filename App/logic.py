@@ -58,6 +58,7 @@ def new_logic():
     catalog['tags'] = lt.new_list()
     catalog['book_tags'] = lt.new_list()
     # TODO Implementar la inicialización de la lista de asociación de libros y tags
+    
     catalog['books_to_read'] = None
     catalog["book_sublist"] = None
     return catalog
@@ -75,6 +76,7 @@ def load_data(catalog):
     tag_size = load_tags(catalog)
     book_tag_size = load_books_tags(catalog)
     # TODO Cargar los datos de libros para leer
+    books_to_read = load_books_to_read(catalog)
     return books, authors, tag_size, book_tag_size, books_to_read
 
 
@@ -117,7 +119,10 @@ def load_books_to_read(catalog):
     """
     Carga la información del archivo to_read y los agrega a la lista de libros por leer
     """
-    # TODO Implementar la carga de los libros por leer del archivo to_read
+    bookstoreadfile = data_dir + '/to_read.csv'
+    input_file = csv.DictReader(open(bookstoreadfile, encoding='utf-8'))
+    for book_to_read in input_file:
+        add_book_to_read(catalog, book_to_read)
     return books_to_read_size(catalog)
 
 # Funciones de consulta sobre el catálogo
@@ -128,9 +133,14 @@ def get_books_stack_by_user(catalog, user_id):
     Retorna una pila con los libros que un usuario tiene por leer.
     """
     books_stack = st.new_stack()
+    books_to_read = catalog['books_to_read']
+    if books_to_read is None:
+        return books_stack
+    for book in lt.iterator(books_to_read):
+        if book['user_id'] == user_id:
+            st.push(books_stack, book)
 
-    # TODO Completar la función que retorna los libros por leer de un usuario. Se debe usar el TAD Pila para resolver el requerimiento
-
+    # TODO Completar la función que retorna una pila con los libros que un usuario tiene por leer. Se debe usar el TAD Pila para resolver el requerimiento.
     return books_stack
 
 
@@ -139,10 +149,21 @@ def get_user_position_on_queue(catalog, user_id, book_id):
     Retorna la posición de un usuario en la cola para leer un libro.
     """
     queue = q.new_queue()
-
-    # TODO Completar la función que retorna la posición de un usuario en la cola para leer un libro. Se debe usar el TAD Cola para resolver el requerimiento.
-
-    return position
+    books_to_read= catalog['books_to_read']
+    if books_to_read is None:
+        return None
+    
+    for book_to_read in lt.iterator(books_to_read):
+        if book_to_read['book_id'] == book_id:
+            q.enqueue(queue, book_to_read)
+    
+    position = 1
+    while not q.is_empty(queue):
+        current= q.dequeue(queue)
+        if current['user_id'] == user_id:
+            return position
+        position += 1
+    return None
 
 # Funciones para agregar informacion al catalogo
 
@@ -263,7 +284,10 @@ def book_tag_size(catalog):
 
 def books_to_read_size(catalog):
     # TODO Implementar la función que retorna el tamaño de la lista de libros por leer
-    pass
+    books_to_read= catalog['books_to_read']
+    if books_to_read is None:
+        return 0
+    return lt.size(books_to_read)
 
 # Funciones utilizadas para comparar elementos dentro de una lista
 
@@ -352,16 +376,24 @@ def measure_stack_performance(catalog):
 
     # Medir push
     start_time = get_time()
+    st.push(stack, "test_element")
+    end_time = get_time()
+    push_time = delta_time(start_time, end_time)
     # TODO Implementar la medición de tiempo para la operación push
 
     # Medir top
     start_time = get_time()
+    st.top(stack)
     # TODO Implementar la medición de tiempo para la operación top
     end_time = get_time()
     top_time = delta_time(start_time, end_time)
 
     # Medir dequeue
     # TODO Implementar la medición de tiempo para la operación pop
+    start_time = get_time()
+    st.pop(stack)
+    end_time = get_time()
+    pop_time = delta_time(start_time, end_time)
 
     return {
         "push_time": push_time,
